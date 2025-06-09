@@ -194,4 +194,4 @@ cython_debug/
 .cursorindexingignore
 
 
-./libreria_env/*
+libreria_env/*
