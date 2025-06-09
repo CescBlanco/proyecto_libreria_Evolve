@@ -14,10 +14,23 @@ player_urls = manager.generate_player_urls()
 url=  player_urls['La Liga']['2024-2025']['Shooting']
 print("URL:", url)
 
-#Ejemplo de creacíon de un dataframe de estadisticas de la liga con solo una estadictica concreta.
+#Ejemplo de creacíon de un dataframe de una estadisticas unica de la liga seleccionada para todos los jugadores.
 
 df_final =creacion_df_jugadores_estadistica_unica(url= url, guardar_csv=True, league='La Liga', season='2024')
 print(df_final)
+
+#--------------------------------------------------------------------------------------------------------------- 
+
+#Ejemplo de creación de un dataframe de una estadistica unica de la liga seleccionada para todos los equipos, 
+#el primero a favor y el segundo en contra (aplicando el stats_vs)
+
+url_stat_equipo = 'https://fbref.com/en/comps/12/stats/La-Liga-Stats'
+
+df_equipo_stat = obtener_tabla_equipos_estadistica_unica(url_stat_equipo, stats_vs=False, guardar_csv= True, league='La Liga', season='2024')
+print(df_equipo_stat)
+
+df_vs_equipo_stat = obtener_tabla_equipos_estadistica_unica(url_stat_equipo, stats_vs=True, guardar_csv= True, league='La Liga', season='2024')
+print(df_vs_equipo_stat)
 
 #--------------------------------------------------------------------------------------------------------------- 
 
