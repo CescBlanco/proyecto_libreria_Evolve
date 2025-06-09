@@ -1,4 +1,5 @@
-from fbref_scraper import LeagueManager, creacion_df_jugadores_estadistica_unica
+from fbref_scraper.league_manager import LeagueManager
+from fbref_scraper.player_data import creacion_df_jugadores_estadistica_unica
 
 #Llamada a la clase LeagueManager para generar URLs de jugadores
 manager = LeagueManager()

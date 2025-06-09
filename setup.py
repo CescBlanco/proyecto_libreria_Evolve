@@ -4,7 +4,6 @@ setup(
     name="fbref_scraper",
     version="0.1.0",
     packages=find_packages(),
-    package_dir={"": "src"},
     install_requires=[],
     author="Cesc Blanco Arnau",
     author_email="cesc.blanco98@gmail.com",
