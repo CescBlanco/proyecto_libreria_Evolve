@@ -13,7 +13,7 @@ def get_players_data(url, metrica_general=None):
     response = requests.get(url)
     soup = BeautifulSoup(response.content, 'html.parser')
 
-    # 1️⃣ Si no pasas metrica_general, lo extraemos de la URL
+    #Si no pasas metrica_general, lo extraemos de la URL
     if metrica_general is None:
         stat_match = re.search(r'/(\w+)/La-Liga-Stats', url)
         if stat_match:
@@ -41,9 +41,9 @@ def get_players_data(url, metrica_general=None):
         print("No se encontró la tabla de jugadores.")
         return None, None
 
-    # -----------------------
-    # 1️⃣ Procesar el encabezado de la tabla
-    # -----------------------
+   
+    # Procesar el encabezado de la tabla
+ 
     header_rows = player_table.find('thead').find_all('tr')
     last_header_row = header_rows[-1]
 
@@ -66,9 +66,9 @@ def get_players_data(url, metrica_general=None):
 
     df_columns = pd.DataFrame(columns_data)
 
-    # -----------------------
-    # 2️⃣ Extraer las filas de jugadores
-    # -----------------------
+ 
+    #Extraer las filas de jugadores
+    
     data_rows = []
     for row in player_table.find('tbody').find_all('tr'):
         row_data = []
@@ -78,9 +78,9 @@ def get_players_data(url, metrica_general=None):
         if row_data:  # Evitar filas vacías
             data_rows.append(row_data)
 
-    # -----------------------
-    # 3️⃣ Crear el DataFrame de jugadores
-    # -----------------------
+   
+    # Crear el DataFrame de jugadores
+    
     df_players = pd.DataFrame(data_rows, columns=column_names)
 
     return  df_players
