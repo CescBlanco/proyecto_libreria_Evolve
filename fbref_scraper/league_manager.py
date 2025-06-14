@@ -68,8 +68,23 @@ class LeagueManager:
             "Playing Time": "playingtime/players",
             "Miscellaneous Stats": "misc/players",
         }
+        self.team_tables = {
+            'stats': 'stats',
+            'shooting': 'shooting',
+            'passing': 'passing',
+            'passingtypes': 'passing_types',
+            'gca': 'gca',
+            'defensive': 'defense',
+            'possession': 'possession',
+            'playingtime': 'playingtime',
+            'misc': 'misc',
+            'keepers': 'keepers',
+            'keepersadv': 'keepersadv'
+        }
 
-    def get_available_leagues(self):
+        self.headers = {'User-Agent': USER_AGENT}
+
+    def get_available_leagues(self) -> dict:
         """
         Devuelve un diccionario con las ligas disponibles, sus identificadores y temporadas.
 
@@ -84,7 +99,7 @@ class LeagueManager:
             for league_name, data in self.possible_leagues['Fbref'].items()
         }
 
-    def get_league_info(self, league_name):
+    def get_league_info(self, league_name: str) -> dict | None:
         """
         Devuelve la información de una liga específica.
 
@@ -96,7 +111,7 @@ class LeagueManager:
         """
         return self.possible_leagues['Fbref'].get(league_name)
 
-    def get_all_league_names(self):
+    def get_all_league_names(self) -> list:
         """
         Devuelve la lista de nombres de todas las ligas disponibles.
 
@@ -105,7 +120,7 @@ class LeagueManager:
         """
         return list(self.possible_leagues['Fbref'].keys())
 
-    def generate_player_urls(self):
+    def generate_player_urls(self)-> dict:
         """
         Genera URLs completas para acceder a estadísticas de jugadores por liga, temporada y tipo de estadística.
 
@@ -124,11 +139,38 @@ class LeagueManager:
                 season_urls = {}
                 for stat_name, path in self.player_tables.items():
                     url = (
-                        f"{self.base_url}{league_id}/{path}/{season}/"
-                        f"{league_name.replace(' ', '-')}-Stats"
-                    )
+                            f"{self.base_url}{league_id}/{path}/{season}/"
+                            f"{league_data['slug']}-Stats"
+                        )
                     season_urls[stat_name] = url
 
+                urls[league_name][season] = season_urls
+
+        return urls
+    
+    def generate_team_urls(self) -> dict:
+
+        """
+        Genera URLs completas para acceder a estadísticas de equipos por liga, temporada y tipo de estadística.
+
+        Return:
+            dict: Diccionario anidado con URLs organizadas por liga y temporada.
+                Formato: {liga: {temporada: {tipo_estadistica: url}}}
+        """
+        
+        urls = {}
+
+        for league_name, league_data in self.possible_leagues['Fbref'].items():
+            league_id = league_data['id']
+            slug = league_data['slug']
+            seasons = league_data['seasons']
+            urls[league_name] = {}
+
+            for season in seasons:
+                season_urls = {}
+                for stat_name, path in self.team_tables.items():
+                    url = f"{self.base_url}{league_id}/{path}/{slug}-Stats"
+                    season_urls[stat_name] = url
                 urls[league_name][season] = season_urls
 
         return urls

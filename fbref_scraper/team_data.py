@@ -3,247 +3,386 @@ import pandas as pd
 import numpy as np
 import re
 from bs4 import BeautifulSoup, Comment
+from functools import reduce
+import time
 
 
-def obtener_tabla_liga_principal(url_general):
+def obtener_tabla_liga_principal(url_general: str) -> pd.DataFrame:
     """
     Extrae y limpia la tabla clasificatoria de una liga desde FBref.
 
     Args:
-        url_general (str): URL de la página de clasificación de la liga en FBref.
+        url_general (str): URL (en inglés) de la página de clasificación de la liga en FBref.
 
-    Returns:
+    Return:
         pd.DataFrame: DataFrame limpio con la tabla clasificatoria, 
                       renombrando la columna 'RL' a 'Posicion' y eliminando la columna 'Notas'.
     """
-    tabla = pd.read_html(url_general)
-    tabla_sucia = tabla[0]
-    tabla_sucia = tabla_sucia.rename(columns={'RL': 'Posicion'})
-    tabla_limpia = tabla_sucia.drop(columns=['Notas'])
-    return tabla_limpia
-
+    try:
+        tablas = pd.read_html(url_general)
+        tabla = tablas[0]
+        tabla = tabla.rename(columns={'Rk': 'Position'})
+        if 'Notes' in tabla.columns:
+            tabla = tabla.drop(columns=['Notes'])
+        return tabla
+    except Exception as e:
+        print(f"[ERROR] No se pudo obtener la tabla principal de liga desde {url_general}: {e}")
+        return pd.DataFrame()
 #-------------------------------------------------------------------------------------------------------------
 
-def obtener_tabla_equipos_estadistica_unica(url_general, stats_vs=False, guardar_csv= False, league='La Liga', season='2024'):
+def obtener_tabla_equipos_estadistica_unica( url_general: str,  stats_vs: bool = False,   guardar_csv: bool = False,
+    league: str = 'La Liga', season: str = '2024') -> pd.DataFrame:
     """
     Descarga y limpia la tabla de estadísticas de equipos desde una URL de FBref.
+
     Args:
         url_general (str): URL de la tabla de FBref.
         stats_vs (bool): True si la tabla deseada es la segunda (vs) en la página.
-        league (str): Nombre de la liga
-        season (str): Fecha de la temporada
+        guardar_csv (bool): True para guardar la tabla limpia en CSV.
+        league (str): Nombre de la liga.
+        season (str): Temporada.
+
     Returns:
         pd.DataFrame: Tabla limpia con columnas renombradas.
     """
-    tables = pd.read_html(url_general)
+
+    try:
+        tablas = pd.read_html(url_general)
+        df = tablas[1] if stats_vs else tablas[0]
+
+        # Definir metrica_general siempre
+        metrica_general = url_general.split('/')[-2].replace('-', '_').lower()
+
+        # Procesar MultiIndex de columnas si existe
+        if isinstance(df.columns, pd.MultiIndex):
+            nuevas_columnas = []
+            for col in df.columns:
+                over_header = col[0].strip().replace(' ', '_').lower()
+                data_stat = col[1].strip().replace(' ', '_').lower()
+                nuevas_columnas.append(f"{data_stat}_{over_header}_{metrica_general}")
+
+            df.columns = nuevas_columnas
+
+        # Eliminar filas que contengan títulos o vacías
+        if any(df.iloc[:, 0].astype(str).str.contains('Squad', case=False, na=False)):
+            df = df[~df.iloc[:, 0].astype(str).str.contains('Squad', case=False, na=False)].copy()
+
+        df.reset_index(drop=True, inplace=True)
+
     
-    if stats_vs:
-        df = tables[1]
-    else:
-        df = tables[0]
+        # Guardar CSV si solicitado
+        if guardar_csv:
+            league_clean = league.lower().replace(' ', '_')
+            prefijo_vs = 'vs_' if stats_vs else ''
+            nombre_archivo = f'./df_equipos_{prefijo_vs}{metrica_general}_{league_clean}_{season}.csv'
+            df.to_csv(nombre_archivo, index=False)
+
+        return df
     
-    # Comprobamos si la cabecera es un MultiIndex
-    if isinstance(df.columns, pd.MultiIndex):
-        # Extraemos la metrica_general desde la URL
-        metrica_general = url_general.split('/')[-2]  # Ejemplo: 'shooting', 'passing'
-        metrica_general = metrica_general.replace('-', '_').lower()
+    except Exception as e:
+        print(f"[ERROR] Fallo al obtener estadísticas de equipos desde {url_general}: {e}")
+        return pd.DataFrame()
 
-        # Procesamos las columnas
-        columns_data = []
-        new_columns = []
+#------------------------------------------------------------------------------------------------------------------------
 
-        for col in df.columns:
-            over_header = col[0].strip().replace(' ', '_').lower()
-            data_stat = col[1].strip().replace(' ', '_').lower()
+def renombrar_columna_squad(df: pd.DataFrame) -> pd.DataFrame:
 
-            columns_data.append({
-                'data-stat': data_stat,
-                'data-over-header': over_header,
-                'metrica-general': metrica_general
-            })
-
-            new_col_name = f"{data_stat}_{over_header}_{metrica_general}"
-            new_columns.append(new_col_name)
+    """
+    Renombra la columna que contiene 'squad' (sin importar mayúsculas/minúsculas) a 'Squad'.
+    
+    Args:
+        df (pd.DataFrame): DataFrame de entrada.
         
-        df.columns = new_columns
-
-    # Eliminamos filas con nombres de cabecera duplicados o que sean filas vacías
-    if any(df.iloc[:,0].str.contains('Squad', case=False, na=False)):
-        df = df[~df.iloc[:,0].str.contains('Squad', case=False, na=False)].copy()
+    Return:
+        pd.DataFrame: DataFrame con la columna renombrada.
+    """
     
-    # Resetear el índice
-    df = df.reset_index(drop=True)
-
-    # Extraer metrica_general de la URL
-    metrica_general_match = re.search(r'/(\w+)/La-Liga-Stats', url_general)
-    if metrica_general_match:
-        metrica_general = metrica_general_match.group(1)
-    else:
-        metrica_general = 'unknown'
-
-    # Suprimir espacios en el parámetro league
-    league_clean = league.lower().replace(' ', '_')
-
-    # Guardar CSV si es necesario
-    if guardar_csv:
-        df.to_csv(f'./df_equipos_{metrica_general}_{league_clean}_{season}.csv', index=False)
-
+    df = df.copy()
+    df.columns = ['squad' if 'squad' in str(col).lower() else col for col in df.columns]
     return df
 
+#PARA LOS EQUIPOS EN ESTADÍSTICAS QUE NO SEAN DE PORTEROS
+def creacion_df_general_estadisticas_equipos(urls: dict, stats_vs: bool = False,  guardar_csv: bool = False,  guardar_csv_individuales: bool = False,
+                league: str = 'La Liga',  season: str = '2024') -> tuple[pd.DataFrame, pd.DataFrame | None]:
+    """
+    Crea un dataframe combinado con estadísticas generales de equipos (excluye porteros).
+
+    Args:
+        urls (dict): Diccionario con URLs de cada tipo de estadística (stats, shooting, passing, etc.).
+        stats_vs (bool): Si es True, obtiene estadísticas comparativas ('versus').
+        guardar_csv (bool): Si es True, guarda el resultado como CSV.
+        guardar_csv_individuales (bool): Si True, guarda los CSV individuales por estadística. 
+        league (str): Nombre de la liga.
+        season (str): Temporada.
+
+    Returns:
+        tuple: (df_merged, df_merged_vs) si stats_vs=True, si no (df_merged, None)
+    """
+
+    tipos_estadisticas = [
+        'stats', 'shooting', 'passing', 'passingtypes',
+        'gca', 'defensive', 'possession', 'playingtime', 'misc'
+    ]
+
+    def procesar_dfs(stats_vs_flag):
+        dataframes = []
+        for stat in tipos_estadisticas:
+            url = urls.get(stat)
+            if url:
+                df = obtener_tabla_equipos_estadistica_unica(
+                    url_general=url,
+                    stats_vs=stats_vs_flag,
+                    guardar_csv=guardar_csv_individuales,
+                    league=league,
+                    season=season
+                )
+                df_final = renombrar_columna_squad(df)
+                dataframes.append(df_final)
+                time.sleep(5)
+        return dataframes
+
+    # Procesar datos estándar
+    dataframes = procesar_dfs(stats_vs_flag=False)
+    df_merged = reduce(lambda left, right: pd.merge(left, right, on='squad', how='outer'), dataframes)
+
+    # Procesar datos "vs" si aplica
+    df_merged_vs = None
+    if stats_vs:
+        dataframes_vs = procesar_dfs(stats_vs_flag=True)
+        df_merged_vs = reduce(lambda left, right: pd.merge(left, right, on='squad', how='outer'), dataframes_vs)
+
+    # Guardado CSV final
+    if guardar_csv:
+        league_clean = league.lower().replace(' ', '_')
+        df_merged.to_csv(f'estadisticas_equipos_{league_clean}_{season}.csv', index=False)
+        if stats_vs and df_merged_vs is not None:
+            df_merged_vs.to_csv(f'estadisticas_equipos_vs_{league_clean}_{season}.csv', index=False)
+
+    return df_merged, df_merged_vs
+
+#-------------------------------------------------------------------------------------------------------------------------------
+
+#PARA LOS EQUIPOS EN ESTADÍSTICAS DE PORTEROS
+def creacion_df_general_estadisticas_equipos_porteros(urls: dict, stats_vs: bool = False, guardar_csv: bool = False,  guardar_csv_individuales: bool = False,
+            league: str = 'La Liga',  season: str = '2024') -> tuple[pd.DataFrame, pd.DataFrame | None]:
+    """
+    Crea dataframes combinados con estadísticas de equipos para porteros y porteros avanzados.
+
+    Args:
+        urls (dict): Diccionario con claves 'keepers' y 'keepersadv' y sus respectivas URLs.
+        stats_vs (bool): Si es True, incluye estadísticas 'versus' (comparativas).
+        guardar_csv (bool): Si es True, guarda el resultado como CSV.
+        league (str): Nombre de la liga.
+        season (str): Temporada.
+
+    Returns:
+        tuple: (df_merged, df_merged_vs) si stats_vs=True, si no (df_merged, None)
+    """
+    tipos_estadisticas = [
+        'keepers', 'keepersadv'
+    ]
+    
+    def procesar_dfs(urls_dict: dict, stats_vs_flag: bool) -> pd.DataFrame:
+        """
+        Procesa múltiples URLs para obtener, limpiar y combinar las estadísticas por tipo.
+
+        Args:
+            urls_dict (dict): Diccionario con URLs categorizadas por tipo de estadística.
+            stats_vs_flag (bool): Indica si se deben obtener estadísticas comparativas ("vs").
+
+        Return:
+            pd.DataFrame: DataFrame resultante de combinar todas las tablas descargadas vía merge en la columna 'squad'.
+        """
+
+        dataframes = []
+        for stat in tipos_estadisticas:
+            url = urls.get(stat)
+            if url:
+                df = obtener_tabla_equipos_estadistica_unica(
+                    url_general=url,
+                    stats_vs=stats_vs_flag,
+                    guardar_csv=guardar_csv_individuales,
+                    league=league,
+                    season=season
+                )
+                df_final = renombrar_columna_squad(df)
+                dataframes.append(df_final)
+                time.sleep(5)
+        return dataframes
+
+    # Procesar datos estándar
+    dataframes = procesar_dfs(stats_vs_flag=False)
+    df_merged = reduce(lambda left, right: pd.merge(left, right, on='squad', how='outer'), dataframes)
+
+    # Procesar datos "vs" si aplica
+    df_merged_vs = None
+    if stats_vs:
+        dataframes_vs = procesar_dfs(stats_vs_flag=True)
+        df_merged_vs = reduce(lambda left, right: pd.merge(left, right, on='squad', how='outer'), dataframes_vs)
+
+
+    # Guardado CSV final
+    if guardar_csv:
+        league_clean = league.lower().replace(' ', '_')
+        df_merged.to_csv(f'estadisticas_equipos_keepers_{league_clean}_{season}.csv', index=False)
+        if stats_vs and df_merged_vs is not None:
+            df_merged_vs.to_csv(f'estadisticas_equipos_keepers_vs_{league_clean}_{season}.csv', index=False)
+
+    return df_merged, df_merged_vs
 
 #-----------------------------------------------------------------------------------------------------------------------------
 
-def obtener_tabla_tiros_partido(url_partido, tiros_por_equipo=False):
+def obtener_tabla_tiros_partido( url_partido: str,   tiros_por_equipo: bool = False) -> tuple[pd.DataFrame, pd.DataFrame | None, pd.DataFrame | None]:
     """
     Extrae las tablas de tiros de un partido de fútbol desde la URL de FBref.
 
-    Esta función lee las tablas HTML de la página especificada y devuelve:
-    - la tabla principal de tiros combinada (para ambos equipos), y
-    - opcionalmente, las tablas de tiros individuales para el equipo local y visitante.
-
     Args:
         url_partido (str): URL de la página del partido en FBref.
-        tiros_por_equipo (bool, optional): 
-            Si True, también devuelve las tablas de tiros individuales por equipo (local y visitante).
-            Por defecto es False.
+        tiros_por_equipo (bool): Si True, devuelve también tablas individuales de tiros por equipo.
 
-    Returns:
+    Return:
         tuple:
-            - pd.DataFrame: Tabla de tiros general del partido (ambos equipos).
-            - pd.DataFrame or None: Tabla de tiros del equipo local (si se solicita).
-            - pd.DataFrame or None: Tabla de tiros del equipo visitante (si se solicita).
-
-    Notes:
-        - La tabla general de tiros se asume que está en el índice 17 del listado de tablas HTML.
-        - Las tablas individuales (local y visitante) están en los índices 18 y 19, respectivamente.
-        - Esta función elimina el nivel superior del índice de columnas para facilitar el análisis posterior.
+            - pd.DataFrame: Tabla de tiros general (ambos equipos).
+            - pd.DataFrame | None: Tabla tiros equipo local (si se solicita).
+            - pd.DataFrame | None: Tabla tiros equipo visitante (si se solicita).
     """
-    # Leer todas las tablas de la URL
-    tablas = pd.read_html(url_partido)
+    try:
+        tablas = pd.read_html(url_partido)
+
+        # La tabla general está en el índice 17 (puede cambiar si FBref actualiza la página)
+        tabla_tiros = tablas[17]
+        tabla_tiros.columns = tabla_tiros.columns.droplevel(0)
     
-    # Extraer tabla principal de tiros (ambos equipos)
-    tabla_sucia = tablas[17]
-    tabla_sucia.columns = tabla_sucia.columns.droplevel(0)
-    tabla_tiros_completo = tabla_sucia.copy()
 
-    # Inicializar tablas individuales como None (en caso de no solicitarlas)
-    tabla_tiros_local = None
-    tabla_tiros_visitante = None
+        tabla_local = None
+        tabla_visitante = None
 
-    # Extraer tablas individuales si se solicita
-    if tiros_por_equipo:
-        tabla_local = tablas[18]
-        tabla_local.columns = tabla_local.columns.droplevel(0)
-        tabla_tiros_local = tabla_local.copy()
+        if tiros_por_equipo:
+            tabla_local = tablas[18]
+            tabla_local.columns = tabla_local.columns.droplevel(0)
 
-        tabla_visitante = tablas[19]
-        tabla_visitante.columns = tabla_visitante.columns.droplevel(0)
-        tabla_tiros_visitante = tabla_visitante.copy()
+            tabla_visitante = tablas[19]
+            tabla_visitante.columns = tabla_visitante.columns.droplevel(0)
+
+        return tabla_tiros, tabla_local, tabla_visitante
     
-    return tabla_tiros_completo, tabla_tiros_local, tabla_tiros_visitante
+    except Exception as e:
+        print(f"[ERROR] No se pudo obtener la tabla de tiros desde {url_partido}: {e}")
+        return pd.DataFrame(), None, None
+    
+#-----------------------------------------------------------------------------------------------------------------------------
 
-#-----------------------------------------------------------------------------------------------------------------------
-def limpiar_df_estadisticas_partido(df):
+def limpiar_df_estadisticas_partido(df: pd.DataFrame) -> pd.DataFrame:
     """
     Limpia y normaliza un DataFrame de estadísticas de partido.
 
-    - Busca y normaliza la columna de nacionalidad, extrayendo solo el código de país en mayúsculas si existe.
-    - Busca y normaliza la columna de edad, extrayendo solo la parte numérica antes del guion si existe.
-    - Devuelve el DataFrame limpio.
+    - Extrae el código de nacionalidad en mayúsculas si existe.
+    - Extrae la edad como número entero antes de un guion si existe.
 
     Args:
         df (pd.DataFrame): DataFrame original con estadísticas de partido.
 
-    Returns:
+    Return:
         pd.DataFrame: DataFrame limpio y normalizado.
     """
-    # Convertir columnas a minúsculas para búsqueda flexible
-    cols_lower = [col.lower() for col in df.columns]
-    
-    # Buscar columna de nacionalidad (ignorando mayúsculas/minúsculas)
-    nationality_col = [df.columns[i] for i, col in enumerate(cols_lower) if 'nation' in col]
-    if nationality_col:
-        col_name = nationality_col[0]
-        df[col_name] = df[col_name].astype(str).str.extract(r'([A-Z]+)$')
-    
-    # Buscar columna de edad (ignorando mayúsculas/minúsculas)
-    edad_col = [df.columns[i] for i, col in enumerate(cols_lower) if 'age' in col]
-    if edad_col:
-        col_name = edad_col[0]
-        df[col_name] = df[col_name].astype(str).str.split('-').str[0]
+    columnas_lower = [col.lower() for col in df.columns]
+
+    # Procesar columna de nacionalidad
+    cols_nacion = [df.columns[i] for i, col in enumerate(columnas_lower) if 'nation' in col]
+    if cols_nacion:
+        col = cols_nacion[0]
+        df[col] = df[col].astype(str).str.extract(r'([A-Z]+)$')
+
+    # Procesar columna de edad
+    cols_edad = [df.columns[i] for i, col in enumerate(columnas_lower) if 'age' in col]
+    if cols_edad:
+        col = cols_edad[0]
+        df[col] = df[col].astype(str).str.split('-').str[0]
 
     return df
 
-def bajada_nivel_porteros(df):
+def bajada_nivel_porteros(df: pd.DataFrame) -> pd.DataFrame:
     """
-    Normaliza los nombres de las columnas de un DataFrame de porteros, eliminando niveles de MultiIndex.
-
-    - Si las columnas del DataFrame son un MultiIndex, combina los niveles en un solo nombre de columna
-      con el formato 'nombre_columna_nivel2_nombre_columna_nivel1', todo en minúsculas y con espacios reemplazados por guiones bajos.
-    - Si las columnas no son MultiIndex, simplemente normaliza los nombres a minúsculas y reemplaza espacios por guiones bajos.
+    Normaliza columnas de un DataFrame de porteros, bajando nivel de MultiIndex si existe.
 
     Args:
-        df (pd.DataFrame): DataFrame con estadísticas de porteros, posiblemente con columnas MultiIndex.
+        df (pd.DataFrame): DataFrame con columnas MultiIndex o normales.
 
-    Returns:
-        pd.DataFrame: DataFrame con nombres de columnas normalizados a un solo nivel.
+    Return:
+        pd.DataFrame: DataFrame con columnas normalizadas a un solo nivel.
     """
     if isinstance(df.columns, pd.MultiIndex):
-        new_columns = []
+        nuevas_columnas = []
         for col in df.columns:
             over_header = str(col[0]).strip().replace(' ', '_').lower()
             data_stat = str(col[1]).strip().replace(' ', '_').lower()
-            new_col_name = f"{data_stat}_{over_header}"
-            new_columns.append(new_col_name)
-        df.columns = new_columns
+            nuevas_columnas.append(f"{data_stat}_{over_header}")
+        df.columns = nuevas_columnas
     else:
         df.columns = [str(col).strip().replace(' ', '_').lower() for col in df.columns]
     return df
 
-def obtener_tabla_estadisticas_principales_partido(url_partido, keepers=False):
+def obtener_tabla_estadisticas_principales_partido(url_partido: str,    keepers: bool = False
+        ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame | None, pd.DataFrame | None]:
     """
-    Extrae y limpia las tablas principales de estadísticas de un partido de fútbol desde FBref.
+    Extrae y limpia las estadísticas principales de un partido de fútbol desde FBref.
 
     Args:
         url_partido (str): URL de la página del partido en FBref.
-        keepers (bool, opcional): Si es True, también extrae y limpia las tablas de estadísticas de porteros
-                                  para ambos equipos. Por defecto es False.
+        keepers (bool): Extraer estadísticas de porteros si True.
 
-    Returns:
+    Return:
         tuple:
-            - estadisticas_local (pd.DataFrame): Estadísticas principales del equipo local.
-            - estadisticas_visitante (pd.DataFrame): Estadísticas principales del equipo visitante.
-            - keeper_local (pd.DataFrame or None): Estadísticas del portero local (si keepers=True, si no None).
-            - kepper_visitante (pd.DataFrame or None): Estadísticas del portero visitante (si keepers=True, si no None).
-
-    Notas:
-        - Utiliza índices fijos de las tablas extraídas con pd.read_html, por lo que pueden variar si FBref cambia el orden.
-        - Aplica limpieza y normalización a las tablas usando funciones auxiliares.
+            - estadisticas_local (pd.DataFrame): Estadísticas equipo local.
+            - estadisticas_visitante (pd.DataFrame): Estadísticas equipo visitante.
+            - keeper_local (pd.DataFrame | None): Estadísticas portero local.
+            - keeper_visitante (pd.DataFrame | None): Estadísticas portero visitante.
     """
-    keeper_local = None
-    kepper_visitante = None
 
-    tablas = pd.read_html(url_partido)
+    try:
+        tablas = pd.read_html(url_partido)
 
-    # Obtener y limpiar estadísticas del equipo local
-    estadisticas_local = tablas[3]
-    estadisticas_local.columns = estadisticas_local.columns.droplevel(0)
-    estadisticas_local = estadisticas_local.iloc[:-1, :]
-    estadisticas_local = limpiar_df_estadisticas_partido(estadisticas_local)
+        # Estadísticas equipo local
+        estad_local = tablas[3]
+        estad_local.columns = estad_local.columns.droplevel(0)
+        estad_local = estad_local.iloc[:-1, :].copy()
+        estad_local = limpiar_df_estadisticas_partido(estad_local)
 
-    # Obtener y limpiar estadísticas del equipo visitante
-    estadisticas_visitante = tablas[10]
-    estadisticas_visitante.columns = estadisticas_visitante.columns.droplevel(0)
-    estadisticas_visitante = estadisticas_visitante.iloc[:-1, :]
-    estadisticas_visitante = limpiar_df_estadisticas_partido(estadisticas_visitante)
+        # Estadísticas equipo visitante
+        estad_visit = tablas[10]
+        estad_visit.columns = estad_visit.columns.droplevel(0)
+        estad_visit = estad_visit.iloc[:-1, :].copy()
+        estad_visit = limpiar_df_estadisticas_partido(estad_visit)
 
-    if keepers:
-        kepperlocal = tablas[9]
-        kepperlocal_bajadanivel = bajada_nivel_porteros(kepperlocal)
-        keeper_local = limpiar_df_estadisticas_partido(kepperlocal_bajadanivel)
+        keeper_local = None
+        keeper_visitante = None
 
-        keppervisitante = tablas[16]
-        kepper_visitante_bajadanivel = bajada_nivel_porteros(keppervisitante)
-        kepper_visitante = limpiar_df_estadisticas_partido(kepper_visitante_bajadanivel)
+        if keepers:
+            keeper_local_raw = tablas[9]
+            keeper_local = bajada_nivel_porteros(keeper_local_raw)
+            keeper_local = limpiar_df_estadisticas_partido(keeper_local)
 
-    return estadisticas_local, estadisticas_visitante, keeper_local, kepper_visitante
+            keeper_visitante_raw = tablas[16]
+            keeper_visitante = bajada_nivel_porteros(keeper_visitante_raw)
+            keeper_visitante = limpiar_df_estadisticas_partido(keeper_visitante)
+
+        return estad_local, estad_visit, keeper_local, keeper_visitante
+    
+    except Exception as e:
+        print(f"[ERROR] Fallo al obtener estadísticas principales del partido desde {url_partido}: {e}")
+        return pd.DataFrame(), pd.DataFrame(), None, None
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

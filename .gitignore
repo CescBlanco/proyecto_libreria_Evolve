@@ -195,3 +195,5 @@ cython_debug/
 
 
 libreria_env/*
+
+pruebas.ipynb/*
