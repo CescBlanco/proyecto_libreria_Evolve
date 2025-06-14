@@ -12,11 +12,11 @@ def obtener_tabla_liga_principal(url_general: str) -> pd.DataFrame:
     Extrae y limpia la tabla clasificatoria de una liga desde FBref.
 
     Args:
-        url_general (str): URL (en inglés) de la página de clasificación de la liga en FBref.
+        url_general (str): URL (en inglés) de la página de clasificación de una liga en FBref.
 
     Return:
         pd.DataFrame: DataFrame limpio con la tabla clasificatoria, 
-                      renombrando la columna 'RL' a 'Posicion' y eliminando la columna 'Notas'.
+                      renombrando la columna 'Rk' a 'Position' y eliminando la columna 'Notes'.
     """
     try:
         tablas = pd.read_html(url_general)

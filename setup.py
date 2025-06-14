@@ -8,6 +8,7 @@ setup(
         "requests",
         "beautifulsoup4",
         "pandas"
+        "numpy"
         ],
     author="Cesc Blanco Arnau",
     author_email="cesc.blanco98@gmail.com",
