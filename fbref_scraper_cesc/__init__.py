@@ -1,5 +1,5 @@
 """
-fbref_scraper
+fbref_scraper_cesc
 
 Librería para la extracción de datos de fútbol desde FBref mediante web scraping.
 Proporciona funciones para obtener datos estructurados de jugadores, equipos y ligas,

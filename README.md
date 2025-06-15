@@ -1,6 +1,6 @@
-# 📊 fbref_scraper
+# 📊 fbref_scraper_cesc
 
-**fbref_scraper** es una librería en Python que permite extraer de forma automática estadísticas de fútbol desde la página [FBref.com](https://fbref.com/), incluyendo información detallada sobre jugadores, equipos, partidos y comparativas avanzadas. Facilita el trabajo posterior en la creación de informes, análisis avanzados y visualización de datos.
+**fbref_scraper_cesc** es una librería en Python que permite extraer de forma automática estadísticas de fútbol desde la página [FBref.com](https://fbref.com/), incluyendo información detallada sobre jugadores, equipos, partidos y comparativas avanzadas. Facilita el trabajo posterior en la creación de informes, análisis avanzados y visualización de datos.
 
 ## 📌 Características principales:
 
@@ -16,7 +16,7 @@
 ## 📁 Estructura del proyecto
 
 ```plaintext
-fbref_scraper/
+fbref_scraper_cesc/
 │
 ├── __init__.py
 │   ├── league_manager.py      # Gestión de ligas y generación de URLs
@@ -36,8 +36,9 @@ fbref_scraper/
 · Instala desde PyPI:
 
 ```bash
-pip install fbref_scraper
+pip install fbref_scraper_cesc
 ```
+
 O directamente desde GitHub:
 
 ```bash
@@ -54,7 +55,7 @@ libreria_venv/scripts/activate
 · En caso que se quiera actualizar la libreria hacer:
 
 ```bash
-pip install --upgrade fbref_scraper
+pip install --upgrade fbref_scraper_cesc
 ```
 
 · Instalar el paquete en modo desarrollo:
@@ -88,11 +89,16 @@ python .\tests\main.py
 · Importar la clase:
 
 ```python
-from fbref_scraper.league_manager import LeagueManager
+from fbref_scraper_cesc.league_manager import LeagueManager
 
 manager= LeagueManager()
 ```
 
+· Importar modulos para poder utilizar todas las funciones de extracción:
+```python
+from fbref_scraper_cesc.player_data import *
+from fbref_scraper_cesc.team_data import * 
+```
 
 · Crear URLs para scraping:
 ```python
@@ -100,11 +106,6 @@ player_urls = manager.generate_player_urls()
 teams_urls = manager.generate_team_urls()
 ```
 
-· Importar modulos para poder utilizar todas las funciones de extracción:
-```python
-from fbref_scraper.player_data import *
-from fbref_scraper.team_data import * 
-```
 ---
 
 ##  🔍 Demostraciones rápidas: 
