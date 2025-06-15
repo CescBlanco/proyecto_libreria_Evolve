@@ -93,9 +93,9 @@ liga_equipos = 'La Liga'
 # 2: Elegir la temporada disponible en player_urls: ['2024-2025', '2023-2024', '2022-2023', '2021-2022', '2020-2021']
 temporada_equipos= '2024-2025'
 
-# 3: Elegir una estadísticas disponibles: ['stats', 'keepers', 'keepersadv', 'shooting', 'passing', 'passing_types',
-# 'gca', 'defense', 'possession', 'playingtime', 'misc']
-tipo_estadistica_equipos =  'gca'
+# 3: Elegir una estadísticas disponibles:  ['Standard Stats', 'Goalkeeping', 'Advanced Goalkeeping', 'Shooting', 'Passing','Pass Types',
+# 'Goal and Shot Creation', 'Defensive Actions', 'Possession', 'Playing Time', 'Miscellaneous Stats']
+tipo_estadistica_equipos =  'Miscellaneous Stats'
 
 # 4: Creacion de la url para la funcion:
 url_stat_equipo = player_urls[liga_equipos][temporada_equipos][tipo_estadistica_equipos]
@@ -125,7 +125,7 @@ print(' ')
 #PRUEBA DE USO
 print("\n🔹 Probando función para crear el dataframe de la tabla principal de la liga de interés a partir de una URL.")
 print(' ')
-df_tabla_liga= obtener_tabla_liga_principal('https://fbref.com/es/comps/12/Estadisticas-de-La-Liga')
+df_tabla_liga= obtener_tabla_liga_principal('https://fbref.com/en/comps/12/Estadisticas-de-La-Liga')
 print(df_tabla_liga.sample(3))
 print('------')
 print(' ')
@@ -170,7 +170,7 @@ url_partido = 'https://fbref.com/en/partidos/20bdd334/Athletic-Club-Barcelona-Ma
 #PRUEBA DE USO:
 print("\n🔹 Probando función para para extraer el dataframe de los datos de los tiros de un partido para ambos equipos y individualmente.")
 print(' ')
-tabla_tiros_completo,tabla_tiros_local, tabla_tiros_visitante= obtener_tabla_tiros_partido(url_partido, tiros_por_equipo= False)
+tabla_tiros_completo,tabla_tiros_local, tabla_tiros_visitante= obtener_tabla_tiros_partido(url_partido, tiros_por_equipo= True)
 print('Tabla de todos los tiros del partido:')
 print(' ')
 print(tabla_tiros_completo.sample(3))
@@ -188,7 +188,7 @@ print('------')
 
 #Ejecucion de la funcion para extraer las estadisticas de un partido para ambos equipos individualmente y tambien de sus respectivos porteros.
 
-#Ejecucion de la funcion para extraer los datos de los tiros de un partido para ambos equipos y individualmente.
+#Guardar la url del partido elegido:
 url_partido = 'https://fbref.com/en/partidos/20bdd334/Athletic-Club-Barcelona-Mayo-25-2025-La-Liga'
 
 
@@ -207,11 +207,11 @@ print(estadisticas_visitante.sample(3))
 print('------')
 print('Tabla de las estadísticas del portero local en el partido:')
 print(' ')
-print(keeper_local.sample(3))
+print(keeper_local)
 print('------')
 print('Tabla de las estadísticas del portero visitante en el partido:')
 print(' ')
-print(kepper_visitante.sample(3))
+print(kepper_visitante)
 print('------')
 
 #----------------------------------------------------------------------------------------------------------------
