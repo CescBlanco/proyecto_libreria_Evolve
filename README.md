@@ -42,7 +42,7 @@ pip install fbref_scraper_cesc
 O directamente desde GitHub:
 
 ```bash
-pip install git + https://github.com/CescBlanco/proyecto_libreria_Evolve
+ git clone https://github.com/CescBlanco/proyecto_libreria_Evolve
 ```
 
 · Puedes crear un entorno virtual (windows):
