@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(
-    name="fbref_scraper",
+    name="fbref_scraper_cesc",
     version="0.1.0",
     packages=find_packages(),
     install_requires=[

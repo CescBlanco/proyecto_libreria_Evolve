@@ -1,6 +1,6 @@
-from fbref_scraper.league_manager import LeagueManager
-from fbref_scraper.player_data import *
-from fbref_scraper.team_data import * 
+from fbref_scraper_cesc.league_manager import LeagueManager
+from fbref_scraper_cesc.player_data import *
+from fbref_scraper_cesc.team_data import * 
 
 #Llamada a la clase LeagueManager para generar URLs de jugadores.
 
