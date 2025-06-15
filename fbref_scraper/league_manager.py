@@ -46,27 +46,22 @@ class LeagueManager:
                     'slug': 'Serie-A',
                     'seasons': ['2024-2025', '2023-2024', '2022-2023', '2021-2022', '2020-2021']
                 },
-                'Big 5 European Leagues': {
-                    'id': 'Big5',
-                    'slug': 'Big-5-European-Leagues',
-                    'seasons': ['2024-2025', '2023-2024', '2022-2023', '2021-2022', '2020-2021']
-                },
             }
         }
 
         # Tipos de estadísticas disponibles para jugadores
         self.player_tables = {
-            "Standard Stats": "stats/players",
-            "Goalkeeping": "keepers/players",
-            "Advanced Goalkeeping": "keepersadv/players",
-            "Shooting": "shooting/players",
-            "Passing": "passing/players",
-            "Pass Types": "passing_types/players",
-            "Goal and Shot Creation": "gca/players",
-            "Defensive Actions": "defense/players",
-            "Possession": "possession/players",
-            "Playing Time": "playingtime/players",
-            "Miscellaneous Stats": "misc/players",
+            "Standard Stats": "stats",
+            "Goalkeeping": "keepers",
+            "Advanced Goalkeeping": "keepersadv",
+            "Shooting": "shooting",
+            "Passing": "passing",
+            "Pass Types": "passing_types",
+            "Goal and Shot Creation": "gca",
+            "Defensive Actions": "defense",
+            "Possession": "possession",
+            "Playing Time": "playingtime",
+            "Miscellaneous Stats": "misc",
         }
         self.team_tables = {
             'stats': 'stats',
@@ -139,7 +134,7 @@ class LeagueManager:
                 season_urls = {}
                 for stat_name, path in self.player_tables.items():
                     url = (
-                            f"{self.base_url}{league_id}/{path}/{season}/"
+                            f"{self.base_url}{league_id}/{season}/{path}/{season}/"
                             f"{league_data['slug']}-Stats"
                         )
                     season_urls[stat_name] = url
@@ -174,3 +169,4 @@ class LeagueManager:
                 urls[league_name][season] = season_urls
 
         return urls
+

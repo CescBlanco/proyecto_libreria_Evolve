@@ -7,8 +7,9 @@ setup(
     install_requires=[
         "requests",
         "beautifulsoup4",
-        "pandas"
-        "numpy"
+        "pandas",
+        "numpy",
+        "lxml"
         ],
     author="Cesc Blanco Arnau",
     author_email="cesc.blanco98@gmail.com",

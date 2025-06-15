@@ -26,9 +26,6 @@ from .team_data import (
     limpiar_df_estadisticas_partido,
     bajada_nivel_porteros,
     obtener_tabla_estadisticas_principales_partido,
-    renombrar_columna_squad,
-    creacion_df_general_estadisticas_equipos,
-    creacion_df_general_estadisticas_equipos_porteros
 
     )
 
@@ -47,7 +44,5 @@ __all__ = [
     "limpiar_df_estadisticas_partido",
     "bajada_nivel_porteros",
     "obtener_tabla_estadisticas_principales_partido",
-    "renombrar_columna_squad",
-    "creacion_df_general_estadisticas_equipos",
-    "creacion_df_general_estadisticas_equipos_porteros"
+
     ]
